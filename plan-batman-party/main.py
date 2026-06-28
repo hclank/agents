@@ -1,6 +1,7 @@
 from huggingface_hub import login
-from smolagents import CodeAgent, InferenceClientModel, tool
+from smolagents import CodeAgent, InferenceClientModel, tool, DuckDuckGoSearchTool
 from dotenv import load_dotenv
+import datetime
 
 load_dotenv()
 
@@ -26,7 +27,23 @@ def suggest_menu(occasion: str) -> str:
         return "custom menu for the butler"
 
 
-agent = CodeAgent(tools=[suggest_menu], model=InferenceClientModel())
+agent = CodeAgent(
+    tools=[suggest_menu, DuckDuckGoSearchTool()],
+    model=InferenceClientModel(),
+    additional_authorized_imports=["datetime"],
+)
+agent.run("Search for the best music reccommendations for a party at the Wayne's Manor")
 agent.run("Prepare a formal menu for the dinner party.")
+agent.run("""
+    Alfred needs to prepare for the party. Here are the tasks:
+    1. Prepare the drinks - 30 minutes
+    2. Decorate the mansion - 60 minutes
+    3. Set up the menu - 45 minutes
+    4. Prepare the music and playlist - 45 minutes
+
+    If we start right now, at what time will the party be ready?
+    """)
+
 
 login()
+agent.push_to_hub(repo_id="hclanka/alfred-party-planner", private=True)
